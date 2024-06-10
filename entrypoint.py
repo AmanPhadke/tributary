@@ -35,4 +35,21 @@ def record_engine_temperature():
 # practically identical to the above
 @app.route('/collect', methods=['POST'])
 def collect_engine_temperature():
-    return {"success": True}, 200
+    database = redis.Redis(host="redis", port=6379, db=0, decode_responses=True)
+
+    # Fetch the most recent engine temperature reading
+    current_engine_temperature = database.lindex(DATA_KEY, 0)
+
+    # Calculate the average engine temperature
+    engine_temperature_values = database.lrange(DATA_KEY, 0, -1)
+    if len(engine_temperature_values) > 0:
+        average_engine_temperature = sum(float(temp) for temp in engine_temperature_values) / len(
+            engine_temperature_values)
+    else:
+        average_engine_temperature = None
+
+    return {
+        "current_engine_temperature": current_engine_temperature,
+        "average_engine_temperature": average_engine_temperature
+    }, 200
+
